@@ -44,17 +44,17 @@ import org.eclipse.ui.IWorkbench;
 import org.eclipse.ui.IWorkbenchPreferencePage;
 import org.eclipse.ui.dialogs.PropertyPage;
 import org.sonarlint.eclipse.core.internal.TriggerType;
+import org.sonarlint.eclipse.core.internal.resources.RuleExclusionItem;
 import org.sonarlint.eclipse.core.internal.utils.PreferencesUtils;
 import org.sonarlint.eclipse.core.resource.ISonarLintProject;
 import org.sonarlint.eclipse.ui.internal.SonarLintUiPlugin;
 import org.sonarlint.eclipse.ui.internal.server.actions.JobUtils;
-import org.sonarsource.sonarlint.core.client.api.common.RuleKey;
 
 public class RuleExclusionsPage extends PropertyPage implements IWorkbenchPreferencePage {
 
   private Button removeButton;
 
-  private List<RuleKey> excludedRules = new ArrayList<>();
+  private List<RuleExclusionItem> excludedRules = new ArrayList<>();
   private TableViewer table;
 
   public RuleExclusionsPage() {
@@ -99,17 +99,17 @@ public class RuleExclusionsPage extends PropertyPage implements IWorkbenchPrefer
 
     TableViewerColumn ruleKeyColumn = new TableViewerColumn(table, SWT.NONE);
     ruleKeyColumn.setLabelProvider(new RuleKeyLabelProvider());
-    ruleKeyColumn.getColumn().setText("Rule Key");
+    ruleKeyColumn.getColumn().setText("Rule key");
 
-    TableViewerColumn descriptionColumn = new TableViewerColumn(table, SWT.NONE);
-    descriptionColumn.setLabelProvider(new DescriptionLabelProvider());
-    descriptionColumn.getColumn().setText("Description");
+    TableViewerColumn ruleNameColumn = new TableViewerColumn(table, SWT.NONE);
+    ruleNameColumn.setLabelProvider(new RuleNameLabelProvider());
+    ruleNameColumn.getColumn().setText("Rule name");
 
     TableColumnLayout tableLayout = new TableColumnLayout();
     tableComposite.setLayout(tableLayout);
 
     tableLayout.setColumnData(ruleKeyColumn.getColumn(), new ColumnWeightData(150));
-    tableLayout.setColumnData(descriptionColumn.getColumn(), new ColumnWeightData(280));
+    tableLayout.setColumnData(ruleNameColumn.getColumn(), new ColumnWeightData(280));
 
     table.getTable().setHeaderVisible(true);
     data = new GridData(GridData.FILL_BOTH);
@@ -134,7 +134,7 @@ public class RuleExclusionsPage extends PropertyPage implements IWorkbenchPrefer
     int idx = table.getTable().getSelectionIndex();
     Iterator<?> elements = selection.iterator();
     while (elements.hasNext()) {
-      RuleKey data = (RuleKey) elements.next();
+      RuleExclusionItem data = (RuleExclusionItem) elements.next();
       excludedRules.remove(data);
     }
     table.refresh();
@@ -175,7 +175,7 @@ public class RuleExclusionsPage extends PropertyPage implements IWorkbenchPrefer
     removeButton.setEnabled(index >= 0);
   }
 
-  private List<RuleKey> loadExclusions() {
+  private List<RuleExclusionItem> loadExclusions() {
     return new ArrayList<>(PreferencesUtils.getExcludedRules());
   }
 
@@ -203,16 +203,16 @@ public class RuleExclusionsPage extends PropertyPage implements IWorkbenchPrefer
   private static class RuleKeyLabelProvider extends CellLabelProvider {
     @Override
     public void update(ViewerCell cell) {
-      RuleKey ruleKey = (RuleKey) cell.getElement();
-      cell.setText(ruleKey.toString());
+      RuleExclusionItem ruleExclusionItem = (RuleExclusionItem) cell.getElement();
+      cell.setText(ruleExclusionItem.ruleKey().toString());
     }
   }
 
-  private static class DescriptionLabelProvider extends CellLabelProvider {
+  private static class RuleNameLabelProvider extends CellLabelProvider {
     @Override
     public void update(ViewerCell cell) {
-      // TODO get the rule description somehow
-      cell.setText("TODO");
+      RuleExclusionItem ruleExclusionItem = (RuleExclusionItem) cell.getElement();
+      cell.setText(ruleExclusionItem.ruleName());
     }
   }
 }

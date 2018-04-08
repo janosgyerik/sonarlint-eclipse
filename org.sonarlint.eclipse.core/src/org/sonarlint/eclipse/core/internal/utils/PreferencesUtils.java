@@ -26,7 +26,10 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
+
 import javax.annotation.Nullable;
+
+import org.eclipse.core.internal.preferences.Base64;
 import org.eclipse.core.resources.IMarker;
 import org.eclipse.core.runtime.Platform;
 import org.eclipse.core.runtime.preferences.ConfigurationScope;
@@ -35,6 +38,7 @@ import org.osgi.service.prefs.Preferences;
 import org.sonarlint.eclipse.core.SonarLintLogger;
 import org.sonarlint.eclipse.core.internal.SonarLintCorePlugin;
 import org.sonarlint.eclipse.core.internal.resources.ExclusionItem;
+import org.sonarlint.eclipse.core.internal.resources.RuleExclusionItem;
 import org.sonarlint.eclipse.core.internal.resources.SonarLintProjectConfiguration;
 import org.sonarlint.eclipse.core.internal.resources.SonarLintProperty;
 import org.sonarlint.eclipse.core.resource.ISonarLintProject;
@@ -132,42 +136,53 @@ public class PreferencesUtils {
     }
   }
 
-  public static String serializeRuleKey(RuleKey ruleKey) {
-    return ruleKey.repository() + ":" + ruleKey.rule();
+  public static String serializeRuleExclusion(RuleExclusionItem ruleExclusionItem) {
+	return ruleExclusionItem.ruleKey().repository()
+		+ ":" + ruleExclusionItem.ruleKey().rule()
+		+ ":" + new String(Base64.encode(ruleExclusionItem.ruleName().getBytes()));
   }
 
-  public static RuleKey deserializeRuleKey(String serialized) {
-    int indexOfSeparator = serialized.indexOf(':');
-    String repository = serialized.substring(0, indexOfSeparator);
-    String key = serialized.substring(indexOfSeparator + 1);
-    return new RuleKey(repository, key);
+  public static RuleExclusionItem deserializeRuleExclusion(String serialized) {
+    int endOfRepository = serialized.indexOf(':');
+    int endOfRuleKey = serialized.indexOf(':', endOfRepository + 1);
+
+    String repository = serialized.substring(0, endOfRepository);
+    String key = serialized.substring(endOfRepository + 1, endOfRuleKey);
+    String name = new String(Base64.decode(serialized.substring(endOfRuleKey + 1).getBytes()));
+
+    RuleKey ruleKey = new RuleKey(repository, key);
+    return new RuleExclusionItem(ruleKey, name);
   }
 
-  public static String serializeRuleExclusions(Collection<RuleKey> exclusions) {
+  public static String serializeRuleExclusions(Collection<RuleExclusionItem> exclusions) {
     return exclusions.stream()
-      .map(PreferencesUtils::serializeRuleKey)
+      .map(PreferencesUtils::serializeRuleExclusion)
       .collect(Collectors.joining(";"));
   }
 
-  public static Set<RuleKey> deserializeRuleExclusions(@Nullable String property) {
+  public static Set<RuleExclusionItem> deserializeRuleExclusions(@Nullable String property) {
     String[] values = StringUtils.split(property, ";");
     return Arrays.stream(values)
-      .map(PreferencesUtils::deserializeRuleKey)
+      .map(PreferencesUtils::deserializeRuleExclusion)
       .filter(Objects::nonNull)
       .collect(Collectors.toSet());
   }
 
-  public static void excludeRule(RuleKey ruleKey) {
-    Set<RuleKey> excludedRules = deserializeRuleExclusions(getPreferenceString(PREF_RULE_EXCLUSIONS));
-    excludedRules.add(ruleKey);
+  public static void excludeRule(RuleExclusionItem ruleExclusionItem) {
+    Set<RuleExclusionItem> excludedRules = deserializeRuleExclusions(getPreferenceString(PREF_RULE_EXCLUSIONS));
+    excludedRules.add(ruleExclusionItem);
     setPreferenceString(PREF_RULE_EXCLUSIONS, serializeRuleExclusions(excludedRules));
   }
 
-  public static Collection<RuleKey> getExcludedRules() {
+  public static Collection<RuleKey> getExcludedRuleKeys() {
+    return deserializeRuleExclusions(getPreferenceString(PREF_RULE_EXCLUSIONS)).stream().map(x -> x.ruleKey()).collect(Collectors.toSet());
+  }
+
+  public static Collection<RuleExclusionItem> getExcludedRules() {
     return deserializeRuleExclusions(getPreferenceString(PREF_RULE_EXCLUSIONS));
   }
 
-  public static void setExcludedRules(Collection<RuleKey> excludedRules) {
+  public static void setExcludedRules(Collection<RuleExclusionItem> excludedRules) {
     setPreferenceString(PREF_RULE_EXCLUSIONS, serializeRuleExclusions(excludedRules));
   }
 }

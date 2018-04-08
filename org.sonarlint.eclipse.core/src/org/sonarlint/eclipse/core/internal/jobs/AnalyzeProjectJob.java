@@ -98,7 +98,7 @@ public class AnalyzeProjectJob extends AbstractSonarProjectJob {
       .stream()
       .collect(HashMap::new, (m, fWithDoc) -> m.put(fWithDoc.getFile(), fWithDoc.getDocument()), HashMap::putAll);
     this.excludedFiles = request.getExcludedFiles();
-    this.excludedRules = PreferencesUtils.getExcludedRules();
+    this.excludedRules = PreferencesUtils.getExcludedRuleKeys();
     this.triggerType = request.getTriggerType();
   }
 

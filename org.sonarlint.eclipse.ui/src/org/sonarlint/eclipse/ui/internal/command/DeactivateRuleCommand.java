@@ -20,25 +20,26 @@
 package org.sonarlint.eclipse.ui.internal.command;
 
 import java.util.function.Predicate;
+
 import org.eclipse.core.resources.IMarker;
 import org.sonarlint.eclipse.core.internal.TriggerType;
 import org.sonarlint.eclipse.core.internal.markers.MarkerUtils;
+import org.sonarlint.eclipse.core.internal.resources.RuleExclusionItem;
 import org.sonarlint.eclipse.core.internal.utils.PreferencesUtils;
 import org.sonarlint.eclipse.core.resource.ISonarLintFile;
 import org.sonarlint.eclipse.core.resource.ISonarLintProject;
 import org.sonarlint.eclipse.ui.internal.server.actions.JobUtils;
-import org.sonarsource.sonarlint.core.client.api.common.RuleKey;
 
 public class DeactivateRuleCommand extends AbstractIssueCommand {
 
   @Override
   protected void execute(IMarker selectedMarker) {
-    RuleKey ruleKey = MarkerUtils.getRuleKey(selectedMarker);
-    if (ruleKey == null) {
+    RuleExclusionItem ruleExclusionItem = MarkerUtils.getRuleExclusionItem(selectedMarker);
+    if (ruleExclusionItem == null) {
       return;
     }
     
-    PreferencesUtils.excludeRule(ruleKey);
+    PreferencesUtils.excludeRule(ruleExclusionItem);
     Predicate<ISonarLintFile> filter = f -> !f.getProject().isBound();
     JobUtils.scheduleAnalysisOfOpenFiles((ISonarLintProject) null, TriggerType.EDITOR_CHANGE, filter);
   }

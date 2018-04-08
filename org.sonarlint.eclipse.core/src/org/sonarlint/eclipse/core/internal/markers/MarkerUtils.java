@@ -36,6 +36,7 @@ import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.Position;
 import org.sonarlint.eclipse.core.SonarLintLogger;
 import org.sonarlint.eclipse.core.internal.SonarLintCorePlugin;
+import org.sonarlint.eclipse.core.internal.resources.RuleExclusionItem;
 import org.sonarlint.eclipse.core.internal.utils.PreferencesUtils;
 import org.sonarsource.sonarlint.core.client.api.common.RuleKey;
 
@@ -145,15 +146,22 @@ public final class MarkerUtils {
   }
 
   @CheckForNull
-  public static RuleKey getRuleKey(IMarker marker) {
+  public static RuleExclusionItem getRuleExclusionItem(IMarker marker) {
     String repositoryAndKey;
+    String name;
     try {
       repositoryAndKey = marker.getAttribute(SONAR_MARKER_RULE_KEY_ATTR).toString();
+      name = marker.getAttribute(SONAR_MARKER_RULE_NAME_ATTR).toString();
     } catch (CoreException e) {
-      SonarLintLogger.get().error("Unable to extract rule key from marker", e);
+      SonarLintLogger.get().error("Unable to extract rule info from marker", e);
       return null;
     }
-    return PreferencesUtils.deserializeRuleKey(repositoryAndKey);
+
+    int separatorIndex = repositoryAndKey.indexOf(':');
+    String repository = repositoryAndKey.substring(0, separatorIndex);
+    String rule = repositoryAndKey.substring(separatorIndex + 1);
+    RuleKey ruleKey = new RuleKey(repository, rule);
+    return new RuleExclusionItem(ruleKey, name);
   }
 
   public static class ExtraPosition extends Position {
