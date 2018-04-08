@@ -166,4 +166,8 @@ public class PreferencesUtils {
   public static Collection<RuleKey> getExcludedRules() {
     return deserializeRuleExclusions(getPreferenceString(PREF_RULE_EXCLUSIONS));
   }
+
+  public static void setExcludedRules(Collection<RuleKey> excludedRules) {
+    setPreferenceString(PREF_RULE_EXCLUSIONS, serializeRuleExclusions(excludedRules));
+  }
 }
